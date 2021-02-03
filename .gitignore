@@ -1,0 +1,5 @@
+.idea
+data
+csv-small
+venv
+weights.h5
