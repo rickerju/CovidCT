@@ -49,10 +49,10 @@ test_df = pd.read_csv(os.path.join(dirname, 'csv/test{}.csv').format(fold_num))#
 shape=(512,512,1) #shape of the dataset images (in TIFF format)
 
 # Set by me to test GPU
-# config = tf.compat.v1.ConfigProto()
-# config.gpu_options.per_process_gpu_memory_fraction = 0.5
-# config.gpu_options.allow_growth = True
-# session = InteractiveSession(config=config)
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.5
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
 #Create the generators
 train_generator = train_datagen.flow_from_dataframe(
