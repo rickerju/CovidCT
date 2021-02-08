@@ -2,5 +2,5 @@
 data
 csv-small
 venv
-weights.h5
 zip
+data-zips
