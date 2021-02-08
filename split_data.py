@@ -4,7 +4,7 @@ import shutil
 dirname = os.path.dirname(__file__)
 data_directory = os.path.join(dirname, 'data')
 
-data_size = 1000
+data_size = 250
 
 i = 0
 current_directory = ''
