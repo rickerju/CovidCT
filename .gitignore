@@ -4,3 +4,7 @@ csv-small
 venv
 zip
 data-zips
+fold-csv
+fold-data
+models
+weights.h5

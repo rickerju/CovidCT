@@ -36,28 +36,28 @@ if not os.path.isdir(os.path.join(dirname, 'data')):
     for file in archive.namelist():
          archive.extract(file, './data') #Extract the data
 
-fold_num=1 #Select Fold Number
+fold_num=4 #Select Fold Number
 
 #Here we set the data generators for applying data augmentation methods
 train_datagen = ImageDataGenerator(horizontal_flip=True,vertical_flip=True,zoom_range=0.05,rotation_range=360,width_shift_range=0.05,height_shift_range=0.05,shear_range=0.05)
 test_datagen = ImageDataGenerator()
-train_df =pd.read_csv(os.path.join(dirname, 'csv/train{}.csv').format(fold_num)) #raed train csv file
-validation_df = pd.read_csv(os.path.join(dirname, 'csv/validation{}.csv').format(fold_num)) #raed validation csv file (Validation in the training process)
+train_df =pd.read_csv(os.path.join(dirname, 'fold-csv/train.csv')) #raed train csv file
+validation_df = pd.read_csv(os.path.join(dirname, 'fold-csv/validation.csv')) #raed validation csv file (Validation in the training process)
 train_df = shuffle(train_df) #Shuffle the train data
-test_df = pd.read_csv(os.path.join(dirname, 'csv/test{}.csv').format(fold_num))#raed test csv file (For evaluating the final version of the trained network)
+test_df = pd.read_csv(os.path.join(dirname, 'fold-csv/test.csv'))#raed test csv file (For evaluating the final version of the trained network)
 
 shape=(512,512,1) #shape of the dataset images (in TIFF format)
 
 # Set by me to test GPU
 config = tf.compat.v1.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.5
+config.gpu_options.per_process_gpu_memory_fraction = 0.7
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
 #Create the generators
 train_generator = train_datagen.flow_from_dataframe(
       dataframe=train_df,
-      directory='data',
+      directory='fold-data',
       x_col="filename",
       y_col="class",
       target_size=shape[:2],
@@ -65,7 +65,7 @@ train_generator = train_datagen.flow_from_dataframe(
       class_mode='categorical',color_mode="grayscale",shuffle=True)
 validation_generator = test_datagen.flow_from_dataframe(
         dataframe=validation_df,
-        directory='data',
+        directory='fold-data',
         x_col="filename",
         y_col="class",
         target_size=shape[:2],
@@ -73,7 +73,7 @@ validation_generator = test_datagen.flow_from_dataframe(
         class_mode='categorical',color_mode="grayscale",shuffle=True)
 test_generator = test_datagen.flow_from_dataframe(
         dataframe=test_df,
-        directory='data',
+        directory='fold-data',
         x_col="filename",
         y_col="class",
         target_size=shape[:2],
@@ -154,6 +154,9 @@ filepath="models/%s-{epoch:02d}-{val_accuracy:.4f}.hdf5"%full_name  # Path to sa
 checkpoint = ModelCheckpoint(filepath, monitor='val_accuracy', save_best_only=True, mode='max') #creating checkpoint to save the best validation accuracy
 callbacks_list = [checkpoint]
 
+model.summary()
+keras.utils.plot_model(model, "reference_net.png", show_shapes=True)
+
 model.fit(train_generator, epochs=20,validation_data=validation_generator,shuffle=True,callbacks=callbacks_list) #start training
 
 #Model Evaluation
@@ -191,7 +194,7 @@ for trn_model in trained_models: #evaluate the network on each trained net
   nnum=0 #Number of normal cases
   for num,img_name in enumerate(test_generator.filenames): #load image
     gt_ind=test_generator.classes[num] #get the loaded image class index
-    img=cv2.imread(os.path.join('data',img_name),cv2.IMREAD_UNCHANGED) #load image
+    img=cv2.imread(os.path.join('fold-data',img_name),cv2.IMREAD_UNCHANGED) #load image
     pred_ind=np.argmax(net.predict(np.expand_dims(np.expand_dims(img,axis=0),axis=3))[0]) #get the predicted class index
     anum+=1 #count the number of images
     if gt_ind==covid_label:
