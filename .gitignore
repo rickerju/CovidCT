@@ -8,3 +8,5 @@ fold-csv
 fold-data
 models
 weights.h5
+data-old
+
