@@ -1,16 +1,11 @@
-"""
-Title: Transfer learning & fine-tuning
-Author: [fchollet](https://twitter.com/fchollet)
-Date created: 2020/04/15
-Last modified: 2020/05/12
-Description: Complete guide to transfer learning & fine-tuning in Keras.
-"""
 import os
 
 from keras.applications.resnet_v2 import ResNet50V2
 from keras.applications.xception import Xception
 from keras.preprocessing.image import ImageDataGenerator
 from tensorflow.python.client.session import InteractiveSession
+
+import matplotlib.pyplot as plt
 
 import pandas as pd
 import numpy as np
@@ -47,7 +42,7 @@ session = InteractiveSession(config=config)
 # test_ds = test_ds.cache().batch(batch_size).prefetch(buffer_size=10)
 
 shape = (512, 512, 1)
-train_datagen = ImageDataGenerator(horizontal_flip=True,vertical_flip=True,zoom_range=0.05,rotation_range=360,width_shift_range=0.05,height_shift_range=0.05,shear_range=0.05)
+train_datagen = ImageDataGenerator()
 test_datagen = ImageDataGenerator()
 train_df = pd.read_csv(os.path.join(dirname, 'fold-csv/train.csv')) #raed train csv file
 validation_df = pd.read_csv(os.path.join(dirname, 'fold-csv/validation.csv'))
@@ -57,7 +52,7 @@ train_generator = train_datagen.flow_from_dataframe(
       x_col="filename",
       y_col="class",
       target_size=shape[:2],
-      batch_size=14,
+      batch_size=10,
       class_mode='categorical',color_mode="grayscale",shuffle=True)
 validation_generator = test_datagen.flow_from_dataframe(
         dataframe=validation_df,
@@ -87,7 +82,6 @@ norm_layer.set_weights([mean, var])
 
 x = base_model(x, training=False)
 x = keras.layers.GlobalAveragePooling2D()(x)
-# x = keras.layers.Dense(2048)(x)
 outputs = keras.layers.Dense(2)(x)
 model = keras.Model(inputs, outputs)
 
@@ -97,38 +91,34 @@ model.compile(
     metrics=['accuracy'],
 )
 
-epochs = 20
+epochs = 100
 model.summary()
-model.fit(train_generator, epochs=epochs, validation_data=validation_generator)
+history = model.fit(train_generator, epochs=epochs, validation_data=validation_generator)
 
-# """
-# ## Do a round of fine-tuning of the entire model
-# Finally, let's unfreeze the base model and train the entire model end-to-end with a low
-#  learning rate.
-# Importantly, although the base model becomes trainable, it is still running in
-# inference mode since we passed `training=False` when calling it when we built the
-# model. This means that the batch normalization layers inside won't update their batch
-# statistics. If they did, they would wreck havoc on the representations learned by the
-#  model so far.
-# """
-#
-# # Unfreeze the base_model. Note that it keeps running in inference mode
-# # since we passed `training=False` when calling it. This means that
-# # the batchnorm layers will not update their batch statistics.
-# # This prevents the batchnorm layers from undoing all the training
-# # we've done so far.
-# base_model.trainable = True
-# model.summary()
-#
-# model.compile(
-#     optimizer=keras.optimizers.Adam(1e-5),  # Low learning rate
-#     loss=keras.losses.BinaryCrossentropy(from_logits=True),
-#     metrics=[keras.metrics.BinaryAccuracy()],
-# )
-#
-# epochs = 10
-# model.fit(train_ds, epochs=epochs, validation_data=validation_ds)
-#
-# """
-# After 10 epochs, fine-tuning gains us a nice improvement here.
-# """
+print(history.history.keys())
+
+plt.figure(1)
+plt.xticks(np.arange(0, 21, 1.0))
+
+# summarize history for accuracy
+
+plt.subplot(211)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+
+# summarize history for loss
+
+plt.subplot(212)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+
+plt.savefig("fig1.png")
+plt.show()
